@@ -36,7 +36,7 @@ public class OrganicMolecule extends Molecule
     public String getIUPACName()
     { return name; }
 
-    boolean verifyOrder()
+    private boolean verifyOrder()
     {
         List<Integer> locs = principalGroupLocations();
         if (locs.size() == 0) return true;
@@ -66,17 +66,17 @@ public class OrganicMolecule extends Molecule
                 return first <= last;
         }
     }
-        
+
     private boolean hasBond(int index, String symbol, int order)
     {
         for (IBond bond : getConnectedBondsList(chain[index]))
         {
-            if (bond.getConnectedAtom(chain[index]).getSymbol().equals(symbol) && bond.getOrder().ordinal() == order) return true;
+            if (bond.getConnectedAtom(chain[index]).getSymbol().equals(symbol) && bond.getOrder().ordinal() + 1 == order) return true;
         }
         return false;
     }
     
-    public Group highestPrecedenceGroup(int i)
+    private Group highestPrecedenceGroup(int i)
     {
         if (!chain[i].getSymbol().equals("C")) throw new IllegalArgumentException();
         if (hasBond(i, "O", 2))
@@ -95,7 +95,7 @@ public class OrganicMolecule extends Molecule
         else return Group.Alkyl;
     }
 
-    Group principalGroup()
+    private Group principalGroup()
     {
         Group highest = Group.Alkyl;
         for (int i = 0; i < chain.length; i++)
@@ -106,7 +106,7 @@ public class OrganicMolecule extends Molecule
         return highest;
     }
 
-    List<Integer> principalGroupLocations()
+    private List<Integer> principalGroupLocations()
     {            
         Group highest = principalGroup();
         if (highest == Group.Alkyl) return sideChainLocations();
@@ -121,7 +121,7 @@ public class OrganicMolecule extends Molecule
         }
     }
     
-    List<Integer> sideChainLocations()
+    private List<Integer> sideChainLocations()
     {
         List<Integer> locs = new ArrayList<Integer>();
         for (int i = 0; i < chain.length; i++)
@@ -294,7 +294,7 @@ public class OrganicMolecule extends Molecule
                     break;
                 }
             }
-            IAtom parent = null;            
+            IAtom parent = null;
             for (int i = 1; i < chainArray.length; i++)
             {
                 for (IAtom a : getConnectedAtomsList(chainArray[i - 1]))
@@ -413,10 +413,15 @@ public class OrganicMolecule extends Molecule
         {
             enumerateChain();
             String suffix = getSuffix();
-            int firstLetter;
-            for (firstLetter = 0; !Character.isLetter(suffix.charAt(firstLetter)); firstLetter++) ;
-            return Suffix(getPrefix(),
-                suffix.substring(0, firstLetter) + chainLengthPrefix(chain.length) + (firstLetterIsConsonant(suffix) ? "a" : "") + suffix.substring(firstLetter));
+            int firstNonLetter;
+            for (firstNonLetter = 0; firstNonLetter < suffix.length() && Character.isLetter(suffix.charAt(firstNonLetter)); firstNonLetter++) ;
+            if (firstNonLetter == suffix.length()) firstNonLetter = 0;
+            int followingLetter;
+            for (followingLetter = firstNonLetter; followingLetter < suffix.length() && !Character.isLetter(suffix.charAt(followingLetter)); followingLetter++) ;
+            String s = Suffix(getPrefix(), suffix.substring(firstNonLetter, followingLetter) + chainLengthPrefix(chain.length) +
+                (firstLetterIsConsonant(suffix) ? "a" : "") + suffix.substring(0, firstNonLetter) + suffix.substring(followingLetter));
+            if (s.charAt(0) == '-') return s.substring(1);
+            else return s;
         }
 
         private String getPrefix()
