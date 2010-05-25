@@ -1,5 +1,4 @@
 import org.openscience.cdk.Molecule;
-import org.openscience.cdk.templates.MoleculeFactory;
 import org.openscience.cdk.ChemFile;
 import org.openscience.cdk.tools.manipulator.ChemFileManipulator;
 import org.openscience.cdk.exception.CDKException;
@@ -13,6 +12,21 @@ public class Program
     public static void main(String[] args)
     {
         JFileChooser chooser = new JFileChooser();
+        chooser.setFileFilter(new javax.swing.filechooser.FileFilter()
+        {
+            public boolean accept(File f)
+            {
+                if (f.isDirectory()) return true;
+                String s = f.getName();
+                return s.length() > 4 && s.substring(s.length() - 4).equals(".cml");
+            }
+            
+            public String getDescription()
+            {
+                return "Chemical Markup Language file (*.cml)";
+            }
+        });
+        chooser.setAcceptAllFileFilterUsed(false);
         if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION)
         {
             try

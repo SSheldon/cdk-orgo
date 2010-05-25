@@ -17,8 +17,11 @@ public class OrganicMolecule extends Molecule
         boolean containsCarbon = false;
         for (IAtom atom : atoms())
         {
-            if (atom.getSymbol().equals("C")) containsCarbon = true;
-            break;
+            if (atom.getSymbol().equals("C"))
+            {
+                containsCarbon = true;
+                break;
+            }
         }
         if (!containsCarbon) throw new CDKException("Molecule is inorganic.");
         chain = new CarbonChainFinder().getChain();
