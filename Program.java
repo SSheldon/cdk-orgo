@@ -24,16 +24,19 @@ public class Program
                     cf = (ChemFile)reader.read(cf);
                     OrganicMolecule x = new OrganicMolecule(
                         new Molecule(ChemFileManipulator.getAllAtomContainers(cf).get(0)));
-                    JOptionPane.showMessageDialog(null, x.getIUPACName());
+                    JOptionPane.showMessageDialog(null, x.getIUPACName(),
+                        "Organic molecule name", JOptionPane.INFORMATION_MESSAGE);
                 }
                 catch (CDKException e2)
                 {
-                    System.out.println(e2);
+                    JOptionPane.showMessageDialog(null, e2.getMessage(),
+                        "Error", JOptionPane.ERROR_MESSAGE);
                 }
             }
             catch (FileNotFoundException e1)
             {
-                System.out.println(e1);
+                JOptionPane.showMessageDialog(null, e1.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }

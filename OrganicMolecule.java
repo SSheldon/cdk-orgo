@@ -1,5 +1,6 @@
 import org.openscience.cdk.Molecule;
 import org.openscience.cdk.interfaces.*;
+import org.openscience.cdk.exception.CDKException;
 import java.util.*;
 
 public class OrganicMolecule extends Molecule
@@ -10,9 +11,16 @@ public class OrganicMolecule extends Molecule
     private String name;
     private Group principal;
     
-    public OrganicMolecule(Molecule mol)
+    public OrganicMolecule(Molecule mol) throws CDKException
     {
         super(mol);
+        boolean containsCarbon = false;
+        for (IAtom atom : atoms())
+        {
+            if (atom.getSymbol().equals("C")) containsCarbon = true;
+            break;
+        }
+        if (!containsCarbon) throw new CDKException("Molecule is inorganic.");
         chain = new CarbonChainFinder().getChain();
         principal = principalGroup();
         if (!verifyOrder())
@@ -240,13 +248,16 @@ public class OrganicMolecule extends Molecule
         {
             int maxLength = 0;
             IAtom atom = null;
-            for (IAtom a : chain)
+            for (IAtom a : atoms())
             {
-                int length = longestChildChain(a, null);
-                if (length > maxLength)
+                if (a.getSymbol().equals("C"))
                 {
-                    maxLength = length;
-                    atom = a;
+                    int length = longestChildChain(a, null);
+                    if (length > maxLength)
+                    {
+                        maxLength = length;
+                        atom = a;
+                    }
                 }
             }
             return atom;
@@ -254,13 +265,10 @@ public class OrganicMolecule extends Molecule
         
         private boolean isNonAlkyl(IAtom a)
         {
-            if (!a.getSymbol().equals("C")) return false;
+            if (!a.getSymbol().equals("C")) return true;
             for (IBond bond : getConnectedBondsList(a))
-            {
-                if (!bond.getConnectedAtom(a).getSymbol().equals("C")) return false;
-                if (bond.getOrder() != IBond.Order.SINGLE) return false;
-            }
-            return true;
+                if (!bond.getConnectedAtom(a).getSymbol().equals("C") || bond.getOrder() != IBond.Order.SINGLE) return true;
+            return false;
         }
         
         private boolean verifyChain()
@@ -282,9 +290,10 @@ public class OrganicMolecule extends Molecule
             return bondedCInChain < 2;
         }
         
-        public IAtom[] getChain()
+        public IAtom[] getChain() throws CDKException
         {
             assignCarbonChain();
+            if (!verifyChain()) throw new CDKException("Not all of the molecule's functional groups are included in the chain.");
             IAtom[] chainArray = new IAtom[chain.size()];
             for (IAtom a : chain)
             {
@@ -413,15 +422,15 @@ public class OrganicMolecule extends Molecule
         {
             enumerateChain();
             String suffix = getSuffix();
-            int firstNonLetter;
-            for (firstNonLetter = 0; firstNonLetter < suffix.length() && Character.isLetter(suffix.charAt(firstNonLetter)); firstNonLetter++) ;
-            if (firstNonLetter == suffix.length()) firstNonLetter = 0;
+            int firstNumber;
+            for (firstNumber = 0; firstNumber < suffix.length() && !Character.isDigit(suffix.charAt(firstNumber)) && suffix.charAt(firstNumber) != '-'; firstNumber++) ;
+            if (firstNumber == suffix.length()) firstNumber = 0;
             int followingLetter;
-            for (followingLetter = firstNonLetter; followingLetter < suffix.length() && !Character.isLetter(suffix.charAt(followingLetter)); followingLetter++) ;
-            String s = Suffix(getPrefix(), suffix.substring(firstNonLetter, followingLetter) + chainLengthPrefix(chain.length) +
-                (firstLetterIsConsonant(suffix) ? "a" : "") + suffix.substring(0, firstNonLetter) + suffix.substring(followingLetter));
-            if (s.charAt(0) == '-') return s.substring(1);
-            else return s;
+            for (followingLetter = firstNumber; followingLetter < suffix.length() && !Character.isLetter(suffix.charAt(followingLetter)); followingLetter++) ;
+            String stem = suffix.substring(firstNumber, followingLetter) + chainLengthPrefix(chain.length) +
+                (firstLetterIsConsonant(suffix) ? "a" : "") + suffix.substring(0, firstNumber) + suffix.substring(followingLetter);
+            if (stem.charAt(0) == '-') stem = stem.substring(1);
+            return Suffix(getPrefix(), stem);
         }
 
         private String getPrefix()
@@ -449,7 +458,12 @@ public class OrganicMolecule extends Molecule
         {
             String suffix = "";
             if (suffixes.containsKey("en")) suffix = Suffix(suffix, Affix("en", suffixes.get("en")));
-            if (suffixes.containsKey("yn")) suffix = Suffix(suffix, Affix("yn", suffixes.get("yn")));
+            if (suffixes.containsKey("yn"))
+            {
+                String alkynylSuffix = Affix("yn", suffixes.get("yn"));
+                if (firstLetterIsConsonant(alkynylSuffix)) suffix += "e";
+                suffix = Suffix(suffix, alkynylSuffix);
+            }
             if (suffix.length() == 0) suffix = "an";
             switch (principal)
             {
@@ -578,6 +592,7 @@ public class OrganicMolecule extends Molecule
                 case 2: return "di";
                 case 3: return "tri";
                 case 4: return "tetra";
+                case 5: return "penta";
             }
             throw new IllegalArgumentException();
         }
