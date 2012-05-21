@@ -1,0 +1,3 @@
+[submodule "org.openscience.cdk"]
+	path = org.openscience.cdk
+	url = https://github.com/cdk/cdk.git
